@@ -1,0 +1,100 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+# Module 1 - Assignment 3
+## Roberts, Damon
+### R and RStudio Refresher
+
+*****
+### Task 1
+```{r task 1}
+# install.packages("tidyverse")
+library(tidyverse)
+```
+
+*****
+### Task 2
+```{r task 2}
+diamonddata = diamonds
+
+str(diamonddata)
+```
+
+###### For this project, we'll be looking at the _diamonds_ dataset, part of the ggplot2 package. This dataset has 53,940 observations (or rows) with 10 variables (columns) each.
+
+*****
+### Task 3
+```{r task 3}
+diamonddata %>% ggplot(aes(carat, price)) +
+  geom_point()
+```
+
+###### There appears to be a clear relationship between carat size of diamonds and their price. As carat size increases the price increases sharply, appearing to almost increase exponentially. We can also see that as carat size increases, the prices become a bit more varied, suggesting there are more factors affecting price than just carat.
+
+*****
+### Task 4
+```{r task 4}
+diamonddata %>% ggplot(aes(carat, price, color = cut)) +
+  geom_point() +
+  scale_color_hue(l=60)
+```
+
+###### Adding an additional variable to display color helps highlight the difference cut quality has on a diamond’s price. It would appear Fair and Good cuts result in lower prices for diamonds, while the better cuts like Ideal and Premium result in a higher price. There also seems to be a relationship between carat size and cut quality. Higher-quality cuts tend to appear on the smaller-sized diamonds, while larger diamonds tend to have lower quality cuts.
+
+*****
+### Task 5
+```{r task 5}
+diamonddata %>% ggplot(aes(carat, price, color = cut)) +
+  geom_point(shape = 1) +
+  scale_color_hue(l=60) +
+  facet_wrap(color ~ .)
+```
+
+###### We can now study the effects color may have on price and diamond size. Diamonds are ranked by color from D (highest) to J (lowest). Higher grade colors like D or E tend to be present in smaller diamonds, while the lower grade colors are found in a wide range of sizes. We can make the assumption that high-grade colors are more rare, as they're typically only found in smaller stones. However, they also tend to fetch the highest price. A 1-carat diamond with D color grade could be worth over $15,000, while a J-grade diamond would likely need to be at least twice the size (2-carat) to reach the same value.
+
+*****
+### Task 6
+```{r task 6}
+inventory <- read.csv("InventoryData.csv")
+
+str(inventory)
+
+summary(inventory)
+```
+
+###### The dataset _InventoryData.csv_ includes 13,561 obersvations with 6 variables each. It describes the SKU number, store location, supplier, cost per unit, total on-hand, and annual demand for each item in an inventory. Item SKU, store, and supplier are all categorical data, while cost per unit, on-hand inventory, and annual demand are all numerical.
+
+*****
+### Task 7
+```{r task 7}
+inventoryA <- inventory %>%
+  filter(Supplier == "A")
+
+str(inventoryA)
+```
+
+###### Filtering the inventory for only products from Supplier A reduces the number of observations to 3,695.
+
+*****
+### Task 8
+```{r task 8}
+inventoryA = mutate(inventoryA, OnHandRatio = `On.Hand` / `Annual.Demand`)
+```
+
+###### The code above creates a new variable (column) in the newly created InventoryA data frame. This new variable calculates a ratio based on the amount of product on-hand versus the amount demanded annually from customers.
+
+*****
+### Task 9
+```{r task 9}
+avg_cost <- inventory %>%
+  group_by(Item.SKU) %>%
+  summarize(SKUAvgCost = mean(Cost.per.Unit....))
+
+avg_cost
+```
+
+*****
+### Task 10 - Final Thoughts
+###### Given that I just completed MIS 503 and MIS 506, RStudio is still very fresh in my mind. This exercise was a good warm-up, but these exercises didn't provide much challenge. However, I can already tell I'll learn a lot from this course as we start deep-diving into more powerful R concepts.

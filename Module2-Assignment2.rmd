@@ -1,0 +1,140 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+# Module 2 - Assignment 2
+## Roberts, Damon
+### Multiple Linear Regression and Special Issues
+
+*****
+### Initialize RStudio
+```{r}
+options(tidyverse.quiet = TRUE)
+
+library(tidyverse)
+library(GGally)
+library(MASS)
+library(leaps)
+```
+
+*****
+### Task 1 - Import data and convert variables
+```{r}
+bike = read_csv("hour.csv")
+
+bike2 = bike %>%
+  mutate(season = as_factor(as.character(season))) %>%
+  mutate(season = fct_recode(season,
+                             "Spring" = "1",
+                             "Summer" = "2",
+                             "Fall" = "3",
+                             "Winter" = "4")) %>%
+  mutate(yr = as_factor(yr)) %>%
+  mutate(mnth = as_factor(mnth)) %>%
+  mutate(hr = as_factor(hr)) %>%
+  mutate(holiday = as_factor(as.character(holiday))) %>%
+  mutate(holiday = fct_recode(holiday,
+                              "NotHoliday" = "0",
+                              "Holiday" = "1")) %>%
+  mutate(workingday = as_factor(as.character(workingday))) %>%
+  mutate(workingday = fct_recode(workingday,
+                                 "NotWorkingDay" = "0",
+                                 "WorkingDay" = "1")) %>%
+  mutate(weathersit = as_factor(as.character(weathersit))) %>%
+  mutate(weathersit = fct_recode(weathersit,
+                                 "NoPrecip" = "1",
+                                 "Misty" = "2",
+                                 "LightPrecip" = "3",
+                                 "HeavyPrecip" = "4")) %>%
+  mutate(weekday = as_factor(as.character(weekday))) %>%
+  mutate(weekday = fct_recode(weekday,
+                              "Sunday" = "0",
+                              "Monday" = "1",
+                              "Tuesday" = "2",
+                              "Wednesday" = "3",
+                              "Thursday" = "4",
+                              "Friday" = "5",
+                              "Saturday" = "6"))
+```
+
+Factors are important for plotting and using categorical variables in regression models. While seasons were assigned a numeric value of 1-4 in the dataset, that value has no actual meaning in our calculations. Thus, we needed to convert the numeric values into characters, then create factors from those characters so they can be used in analysis.
+
+*****
+### Task 2 - Calculate variable correlations
+```{r}
+ggcorr(bike2, label = TRUE)
+```
+
+It appears *temp* and *atemp* have the highest correlation with count at approximately 0.4 each.
+
+*****
+### Task 3 - Visualize relationship between categorical and response variables
+```{r}
+ggplot(bike2, aes(season, count)) + geom_boxplot() + labs(title = "Count by Season")
+ggplot(bike2, aes(yr, count)) + geom_boxplot() + labs(title = "Count by Year")
+ggplot(bike2, aes(mnth, count)) + geom_boxplot() + labs(title = "Count by Month")
+ggplot(bike2, aes(weekday, count)) + geom_boxplot() + labs(title = "Count by Weekday")
+ggplot(bike2, aes(hr, count)) + geom_boxplot() + labs(title = "Count by Hour of Day")
+ggplot(bike2, aes(holiday, count)) + geom_boxplot() + labs(title = "Count by Holiday Status")
+ggplot(bike2, aes(workingday, count)) + geom_boxplot() + labs(title = "Count by Working-Day Status")
+ggplot(bike2, aes(weathersit, count)) + geom_boxplot() + labs(title = "Count by Weather")
+```
+
+*Season* and *month* both appear to have a good effect on *count*. In *season*, summer and fall tend to have the highest counts, while spring and winter tend to have lower median counts. Similarly, months in the middle of the year (5-9, or May to September) tend to see the highest count, while months at the start and end of each year (Jan-March, and Nov-Dec) have the lowest counts of the year. This suggests counts are dependent on the climate at certain parts of the year, most likely in the Northern Hemisphere where comfortable weather is present during these times. *Weather* also seems to influence *count*, with higher counts when there is little or no precipication recorded. *Year* has only data from 2011 and 2012, so it's difficult to make conclusions based solely on the year.
+
+*Hour* seems to have the largest effect by causing large variations in count depending on the hour each day. 7-8am and 5-6pm tend to have the highest median count, which corresponds with the typical 8am-5pm work schedule. However, *workingday* does not seem to have a large effect on *count*.This may be due to individuals maintaining their usual biking schedule regardless of whether the day is a holiday, weekday, or weekend. The low influence from *weekday* may be related to this reasoning as well.
+
+*Holiday* appears to have similar median counts whether the day is a holiday or not, although non-holidays tend to have more outliers. This may be due to difference in population size: the dataset includes 16,879 non-holiday obersvations and only 500 holiday observations.
+
+*****
+### Task 4 - Building a forward stepwise regression
+```{r}
+bike3 = bike2 %>%
+  dplyr::select(-c(instant,dteday,registered,casual))
+
+allmod =  lm(count ~ ., bike3)
+
+emptymod = lm(count ~ 1, bike3)
+
+forwardmod = stepAIC(emptymod, direction = "forward", scope=list(upper=allmod,lower=emptymod),
+                      trace = TRUE)
+summary(forwardmod)
+```
+
+Our final forward model includes *hour*, *atemp*, *year*, *weather situation*, *season*, *month*, *humidity*, *weekday*, *holiday*, *windspeed*, and *temperature*. Overall, this model appears to be good quality for predicting count based on the variables. Aside from the dummy variables, each p-value is below 0.05, indicating they're significant. The adjusted R-squared value is 0.6854, which is a good value when studying the model. This model also seems to pass the "common-sense" filter; weather attributes will probably have an effect on how many bikers are counted, and we know from looking at the correlations earlier that the hour and time of year are also large influencers.
+
+*****
+### Task 5 - Building a backwards stepwise regression
+```{r}
+backmod = stepAIC(allmod, direction = "backward", trace = TRUE)
+
+summary(backmod)
+```
+
+The backward stepwise model appears identical to our forward stepwise model from above. It includes variables for *season*, *year*, *month*, *hour*, *holiday*, *weekday*, *weather situation*, *temperature*, *atemp*, *humidity*, and *windspeed.* The only difference is the order in which each variable is included in the model, but that will have no bearing on predictions or other calculations.
+
+*****
+### Task 6 - Workingday special case
+
+Workingday is stored as a 1 if the day is neither a weekend nor holiday, or a 0 otherwise. The dataset includes variables listing if a day is/is not a holiday, and whether it is/is not a weekday. Because these variables provide the same information, either workingday or holiday and weekday are redundant and can be ignored in our models.
+
+*****
+### Task 7 - Converting year to an integer and building new forward stepwise model
+```{r}
+bike2 = bike2 %>%
+  mutate(yr = as.integer(yr)-1)
+
+bike3 = bike2 %>%
+  dplyr::select(-c(instant,dteday,registered,casual))
+
+allmod =  lm(count ~ ., bike3)
+
+emptymod = lm(count ~ 1, bike3)
+
+forwardmod = stepAIC(emptymod, direction = "forward", scope=list(upper=allmod,lower=emptymod),
+                      trace = TRUE)
+summary(forwardmod)
+```
+
+Converting yr into an integer did not appear to have an effect on our forward stepwise model. We calculated the same R-squared value of 0.6854, and all non-dummy variables had a significant p-value less than 0.05.

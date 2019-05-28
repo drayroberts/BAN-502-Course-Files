@@ -1,0 +1,111 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+# Module 2 - Assignment 1
+## Roberts, Damon
+### Simple Linear Regression
+
+*****
+### Prepare RStudio
+```{r}
+library(tidyverse)
+library(GGally)
+```
+
+*****
+### Task 1
+```{r}
+air = airquality
+glimpse(air)
+summary(air)
+```
+
+This dataset contains air quality measurements taken daily in New York from May to September in 1973. It includes 153 observations with 6 variables: Ozone, Solar.R, Wind, Temp, Month, and Day. There are 37 missing observations of the Ozone variable, and 7 missing Solar.R observations. Because this dataset studies air quality, Ozone is the most likely response (Y) variable.
+
+*****
+### Task 2
+```{r}
+air2 <- air %>%
+  filter(!is.na(Ozone)) %>%
+  filter(!is.na(Solar.R))
+```
+
+After filtering for missing values, the new dataset _air2_ includes 111 observations with 6 variables.
+
+*****
+### Task 3
+```{r}
+ggpairs(air2)
+ggcorr(air2, label = TRUE)
+```
+
+Temp and Wind both appear to be strongly correlated with Ozone values, with correlations of 0.699 and -0.612, respectively. The least-correlated variable appears to be day, with a correlation of -0.005.
+
+*****
+### Task 4
+```{r}
+ggplot(air2,aes(Temp, Ozone)) + 
+  geom_point()
+```
+
+Based on this plot, it appears Ozone increases gradually as Temp increases. However, the relationship does not sppear to be linear. While the relationship between Temp and Ozone may be linear in lower Temp values, there seems to be an increase in the correlation at Temp values higher than 80.
+
+*****
+### Task 5
+```{r}
+model1 <- lm(Ozone ~ Temp, air2)
+summary(model1)
+
+confint(model1)
+```
+
+From this model, we calculated an R-squared value of 0.488, which suggests the model is of good quality. We also see a p-value of nearly 0, which is less than 0.05 and a significant value.
+
+We're also able to construct a 95% confidence interval to estimate where the slope of the linear regression line may fall. At 95% confidence, we can estimate the slope will be between 1.96 and 2.91.
+
+*****
+### Task 6
+```{r}
+ggplot(air2,aes(Temp, Ozone)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+*****
+### Task 7
+```{r}
+testdata = data.frame(Temp = 80)
+predict(model1, newdata = testdata, interval = "predict")
+```
+
+Based on this regression model, we could expect to see an Ozone of 47.48 with a Temp value of 80. This falls within the prediction inverval of [-0.15, 95.12].
+
+*****
+### Task 8
+```{r}
+ggplot(air2, aes(Day, Ozone)) + 
+  geom_point()
+```
+
+Based on this plot, there doesn't appear to be strong correlation, if any at all, between Day and Ozone. The majority of Ozone values remain below 50 regardless of day. Before day 10 and after day 25, there tend to be more Ozone observations above 50, but these do not indicate a linear relationship between Day and ozone.
+
+*****
+### Task 9
+```{r}
+model2 <- lm(Ozone ~ Day, air2)
+summary(model2)
+
+confint(model2)
+```
+
+After creating a linear regression model to predict Ozone based on Day, we can see there's little evidence for a relationship between the two. The R-squared value is very small at 2.69e-05, indicating virtually no correlation between the variables. In addition, a p-value of 0.9569 is much larger than our preferred 0.05. At 95% confidence, we estimate the slope coeffecient will likely fall between -0.75 and 0.71.
+
+*****
+### Task 10
+```{r}
+ggplot(air2, aes(Day, Ozone)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
